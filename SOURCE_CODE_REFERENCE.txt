@@ -1,0 +1,148 @@
+config - db.js -
+
+const mongoose=require('mongoose');
+async function connectDB() {
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('MongoDB connected');
+}
+module.exports=connectDB;
+
+
+models - product.js -
+
+const mongoose=require('mongoose');
+const productSchema=new mongoose.Schema({
+  name:{
+    type:String,
+    required:[true,'Product name is required'],
+    trim:true
+  },
+  sku:{
+    type:String,
+    required:[true,'SKU is required'],
+    unique:true,
+    trim:true,
+    uppercase:true
+  },
+  category:{
+    type:String,
+    required:[true,'Category is required'],
+    trim:true
+  },
+  price:{
+    type:Number,
+    required:[true,'Price is required'],
+    min:[0,'Price cannot be negative']
+  },
+  quantity:{
+    type:Number,
+    required:[true,'Quantity is required'],
+    min:[0,'Quantity cannot be negative'],
+    default:0
+  },
+  reorderLevel:{
+    type:Number,
+    min:[0,'Reorder level cannot be negative'],
+    default:5
+  },
+  supplier:{
+    type:String,
+    trim:true,
+    default:'Not specified'
+  }
+}, {timestamps:true});
+productSchema.virtual('stockValue').get(function () {
+  return this.price*this.quantity;
+});
+productSchema.set('toJSON',{virtuals:true});
+productSchema.set('toObject',{virtuals:true});
+
+module.exports=mongoose.model('Product',productSchema);
+
+routes - product routes -
+
+const mongoose=require('mongoose');
+const productSchema=new mongoose.Schema({
+  name:{
+    type:String,
+    required:[true,'Product name is required'],
+    trim:true
+  },
+  sku:{
+    type:String,
+    required:[true,'SKU is required'],
+    unique:true,
+    trim:true,
+    uppercase:true
+  },
+  category:{
+    type:String,
+    required:[true,'Category is required'],
+    trim:true
+  },
+  price:{
+    type:Number,
+    required:[true,'Price is required'],
+    min:[0,'Price cannot be negative']
+  },
+  quantity:{
+    type:Number,
+    required:[true,'Quantity is required'],
+    min:[0,'Quantity cannot be negative'],
+    default:0
+  },
+  reorderLevel:{
+    type:Number,
+    min:[0,'Reorder level cannot be negative'],
+    default:5
+  },
+  supplier:{
+    type:String,
+    trim:true,
+    default:'Not specified'
+  }
+}, {timestamps:true});
+productSchema.virtual('stockValue').get(function () {
+  return this.price*this.quantity;
+});
+productSchema.set('toJSON',{virtuals:true});
+productSchema.set('toObject',{virtuals:true});
+
+module.exports=mongoose.model('Product',productSchema);
+
+package.json - 
+{
+  "name": "inventory-data-management-system",
+  "version": "1.0.0",
+  "description": "Simple inventory REST API using Node.js, Express, MongoDB and Mongoose",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "dev": "node --watch server.js" },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5"
+  }
+}
+
+server.js - 
+require('dotenv').config();
+const express=require('express');
+const connectDB=require('./config/db');
+const productRoutes=require('./routes/productRoutes');
+const errorHandler=require('./middleware/errorHandler');
+const app=express();
+app.use(express.json());
+app.get('/',(req,res)=>{
+  res.json({message:'Inventory Management API is running'});
+});
+app.use('/api/products',productRoutes);
+app.use(errorHandler);
+const PORT=process.env.PORT || 5000;
+connectDB()
+  .then(()=>{
+    app.listen(PORT,()=>console.log(`Server running on port ${PORT}`));
+  })
+  .catch(error=>{
+    console.error('Database connection failed:',error.message);
+    process.exit(1);
+  });
